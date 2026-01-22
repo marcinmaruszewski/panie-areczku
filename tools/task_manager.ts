@@ -6,16 +6,31 @@ function getDefaultSlug(): string {
   return process.env.TASK_SLUG || '';
 }
 
-function defaultBaseDir(): string {
-  return path.join(process.cwd(), '.panie-areczku', getDefaultSlug());
+function defaultBaseDir(slug?: string): string {
+  const resolvedSlug = typeof slug === 'string' ? slug : getDefaultSlug();
+  return path.join(process.cwd(), '.panie-areczku', resolvedSlug);
 }
 
-function defaultTaskFilePath(): string {
-  return path.join(defaultBaseDir(), 'tasks.json');
+type ResolveBaseDirArgs = {
+  baseDir?: string;
+  slug?: string;
+};
+
+function resolveBaseDir(args: ResolveBaseDirArgs = {}): string {
+  const baseDir = args.baseDir || process.env.TASK_BASE_DIR || defaultBaseDir(args.slug);
+  return path.resolve(baseDir);
 }
 
-function defaultLogFilePath(): string {
-  return path.join(defaultBaseDir(), 'task.log');
+function defaultTaskFilePath(baseDir?: string): string {
+  return path.join(baseDir || defaultBaseDir(), 'tasks.json');
+}
+
+function defaultLogFilePath(baseDir?: string): string {
+  return path.join(baseDir || defaultBaseDir(), 'task.log');
+}
+
+function defaultPrdFilePath(baseDir?: string): string {
+  return path.join(baseDir || defaultBaseDir(), 'PRD.md');
 }
 const VALID_STATUS_LIST = ['todo', 'doing', 'done', 'blocked', 'failed'] as const;
 const VALID_STATUSES = new Set(VALID_STATUS_LIST);
@@ -25,6 +40,14 @@ type TaskStatus = (typeof VALID_STATUS_LIST)[number];
 type ResolvePathsArgs = {
   taskFilePath?: string;
   logFilePath?: string;
+  baseDir?: string;
+  slug?: string;
+};
+
+type ResolvePrdPathArgs = {
+  prdFilePath?: string;
+  baseDir?: string;
+  slug?: string;
 };
 
 type TaskRecord = {
@@ -44,12 +67,29 @@ type TaskFileData = {
 };
 
 function resolvePaths(args: ResolvePathsArgs = {}): { taskFilePath: string; logFilePath: string } {
-  const taskFilePath = args.taskFilePath || process.env.TASK_FILE_PATH || defaultTaskFilePath();
-  const logFilePath = args.logFilePath || process.env.TASK_LOG_FILE_PATH || defaultLogFilePath();
+  const baseDir = resolveBaseDir({ baseDir: args.baseDir, slug: args.slug });
+  const prefersBaseDir = Boolean(args.baseDir || args.slug);
+  const defaultTaskPath = defaultTaskFilePath(baseDir);
+  const defaultLogPath = defaultLogFilePath(baseDir);
+  const taskFilePath =
+    args.taskFilePath ||
+    (prefersBaseDir ? defaultTaskPath : process.env.TASK_FILE_PATH || defaultTaskPath);
+  const logFilePath =
+    args.logFilePath || (prefersBaseDir ? defaultLogPath : process.env.TASK_LOG_FILE_PATH || defaultLogPath);
   return {
     taskFilePath: path.resolve(taskFilePath),
     logFilePath: path.resolve(logFilePath),
   };
+}
+
+function resolvePrdPath(args: ResolvePrdPathArgs = {}): string {
+  const baseDir = resolveBaseDir({ baseDir: args.baseDir, slug: args.slug });
+  const prefersBaseDir = Boolean(args.baseDir || args.slug);
+  const defaultPrdPath = defaultPrdFilePath(baseDir);
+  const prdFilePath =
+    args.prdFilePath ||
+    (prefersBaseDir ? defaultPrdPath : process.env.PRD_FILE_PATH || defaultPrdPath);
+  return path.resolve(prdFilePath);
 }
 
 function readTasksFile(taskFilePath: string): TaskFileData {
@@ -147,6 +187,8 @@ export const getNextTask = tool({
   args: {
     taskFilePath: tool.schema.string().optional().describe('Path to tasks.json'),
     logFilePath: tool.schema.string().optional().describe('Path to log file'),
+    baseDir: tool.schema.string().optional().describe('Base directory for task artifacts'),
+    slug: tool.schema.string().optional().describe('Slug for .panie-areczku/<slug>'),
   },
   async execute(args) {
     const { taskFilePath } = resolvePaths(args);
@@ -164,6 +206,8 @@ export const updateTaskStatus = tool({
     summary: tool.schema.string().optional().describe('Optional summary'),
     taskFilePath: tool.schema.string().optional().describe('Path to tasks.json'),
     logFilePath: tool.schema.string().optional().describe('Path to log file'),
+    baseDir: tool.schema.string().optional().describe('Base directory for task artifacts'),
+    slug: tool.schema.string().optional().describe('Slug for .panie-areczku/<slug>'),
   },
   async execute(args) {
     const { taskFilePath, logFilePath } = resolvePaths(args);
@@ -185,6 +229,8 @@ export const incrementRetries = tool({
     id: tool.schema.string().describe('Task id'),
     taskFilePath: tool.schema.string().optional().describe('Path to tasks.json'),
     logFilePath: tool.schema.string().optional().describe('Path to log file'),
+    baseDir: tool.schema.string().optional().describe('Base directory for task artifacts'),
+    slug: tool.schema.string().optional().describe('Slug for .panie-areczku/<slug>'),
   },
   async execute(args) {
     const { taskFilePath, logFilePath } = resolvePaths(args);
@@ -198,6 +244,8 @@ export const TASK_FILE = tool({
   description: 'Return the tasks.json path.',
   args: {
     taskFilePath: tool.schema.string().optional().describe('Path to tasks.json'),
+    baseDir: tool.schema.string().optional().describe('Base directory for task artifacts'),
+    slug: tool.schema.string().optional().describe('Slug for .panie-areczku/<slug>'),
   },
   async execute(args) {
     const { taskFilePath } = resolvePaths(args);
@@ -209,9 +257,24 @@ export const LOG_FILE = tool({
   description: 'Return the task manager log path.',
   args: {
     logFilePath: tool.schema.string().optional().describe('Path to log file'),
+    baseDir: tool.schema.string().optional().describe('Base directory for task artifacts'),
+    slug: tool.schema.string().optional().describe('Slug for .panie-areczku/<slug>'),
   },
   async execute(args) {
     const { logFilePath } = resolvePaths(args);
     return logFilePath;
+  },
+});
+
+export const PRD_FILE = tool({
+  description: 'Return the PRD.md path.',
+  args: {
+    prdFilePath: tool.schema.string().optional().describe('Path to PRD.md'),
+    baseDir: tool.schema.string().optional().describe('Base directory for task artifacts'),
+    slug: tool.schema.string().optional().describe('Slug for .panie-areczku/<slug>'),
+  },
+  async execute(args) {
+    const prdFilePath = resolvePrdPath(args);
+    return prdFilePath;
   },
 });
