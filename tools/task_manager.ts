@@ -3,7 +3,7 @@ import path from 'path';
 import { tool } from '@opencode-ai/plugin';
 
 function getDefaultSlug(): string {
-  return process.env.TASK_SLUG || 'task-001-add-logging';
+  return process.env.TASK_SLUG || '';
 }
 
 function defaultBaseDir(): string {
