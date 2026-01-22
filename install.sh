@@ -41,6 +41,19 @@ download() {
   die "No downloader available"
 }
 
+ensure_opencode() {
+  if have opencode; then
+    return
+  fi
+
+  have curl || die "Missing required command: curl (needed for OpenCode install)"
+
+  log "OpenCode CLI not found. Installing from https://opencode.ai/install"
+  if ! curl -fsSL https://opencode.ai/install | bash; then
+    die "OpenCode installation failed"
+  fi
+}
+
 backup_existing_install() {
   if [[ -d "$INSTALL_DIR" ]]; then
     local ts backup
@@ -344,6 +357,7 @@ verify_install() {
 
 main() {
   install_package
+  ensure_opencode
   install_shim
   verify_install
 
