@@ -3,7 +3,7 @@ set -euo pipefail
 
 # panie-areczku installer (master branch)
 
-REPO_OWNER="isobar-playground"
+REPO_OWNER="marcinmaruszewski"
 REPO_NAME="panie-areczku"
 REPO_BRANCH="${REPO_BRANCH:-master}"
 TARBALL_URL="${TARBALL_URL:-https://codeload.github.com/${REPO_OWNER}/${REPO_NAME}/tar.gz/refs/heads/${REPO_BRANCH}}"

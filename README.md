@@ -1,7 +1,7 @@
 # Panie Areczku!
 
 ## Quick install
-- *nix (curl): `curl -fsSL https://raw.githubusercontent.com/isobar-playground/panie-areczku/master/install.sh | bash`
+- *nix (curl): `curl -fsSL https://raw.githubusercontent.com/marcinmaruszewski/panie-areczku/master/install.sh | bash`
 
 ## What the installer does
 - Downloads the latest master package to `~/.panie-areczku`.
