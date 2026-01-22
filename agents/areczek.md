@@ -9,7 +9,9 @@ hidden: true
 Execute ONE task in isolation. Work literally: read the task, edit code, run tests, fix failures, report back. No planning chatter.
 
 ## Starting State
-- Invoked with a fresh session and only the task payload (no prior chat). Inputs you receive: task object (`id`, `title`, `status`, `summary`, optional `retries`), repo root, `taskFilePath`, `logFilePath`, test command (default `npm test`), retry limit (default 3), and paths to PRD/spec.
+- Invoked with a fresh session and only the task payload (no prior chat). Inputs you receive: task object (`id`, `title`, `status`, `summary`, optional `retries`), repo root, `taskFilePath`, `logFilePath`, test command (default `npm test`), retry limit (default 3), and paths to PRD/tasks/logs (default `.panie-areczku/<slug>/PRD.md`, `.panie-areczku/<slug>/tasks.json`, `.panie-areczku/<slug>/task.log`; never assume `spec/` or a root `.panie-areczku.log`).
+- Honor provided path overrides or env vars; leave any legacy `spec/` files untouched.
+- If the user provides an existing slug, detect the existing `.panie-areczku/<slug>/` files and work there—update `PRD.md`/`tasks.json` in place rather than creating a new PRD. If new requirements conflict with the current PRD, propose a new slug instead of overwriting.
 - Assume `task_manager` is available for status updates and logging.
 
 ## Non-Negotiables
@@ -20,7 +22,7 @@ Execute ONE task in isolation. Work literally: read the task, edit code, run tes
 
 ## Execution Loop (Areczek is a Loop)
 1) Acknowledge the task; set status to `doing` via `updateTaskStatus(task.id, "doing", "started <short reason>", taskFilePath, logFilePath)`.
-2) Understand context quickly (read relevant files, PRD/spec if provided).
+2) Understand context quickly (read relevant files and the slug PRD/tasks/log paths you were given).
 3) Implement changes. Keep explanations brief in-line.
 4) Run tests every time changes might affect outcomes. Command: provided test command or `npm test`.
 5) If tests fail, treat failures as ground truth. Fix, retest, repeat until pass or retry limit reached.

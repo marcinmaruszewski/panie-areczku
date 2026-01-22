@@ -2,8 +2,21 @@ import fs from 'fs';
 import path from 'path';
 import { tool } from '@opencode-ai/plugin';
 
-const DEFAULT_TASK_FILE_PATH = path.join(process.cwd(), 'spec', 'tasks.json');
-const DEFAULT_LOG_FILE_PATH = path.join(process.cwd(), '.panie-areczku.log');
+function getDefaultSlug(): string {
+  return process.env.TASK_SLUG || 'task-001-add-logging';
+}
+
+function defaultBaseDir(): string {
+  return path.join(process.cwd(), '.panie-areczku', getDefaultSlug());
+}
+
+function defaultTaskFilePath(): string {
+  return path.join(defaultBaseDir(), 'tasks.json');
+}
+
+function defaultLogFilePath(): string {
+  return path.join(defaultBaseDir(), 'task.log');
+}
 const VALID_STATUS_LIST = ['todo', 'doing', 'done', 'blocked', 'failed'] as const;
 const VALID_STATUSES = new Set(VALID_STATUS_LIST);
 
@@ -31,8 +44,8 @@ type TaskFileData = {
 };
 
 function resolvePaths(args: ResolvePathsArgs = {}): { taskFilePath: string; logFilePath: string } {
-  const taskFilePath = args.taskFilePath || process.env.TASK_FILE_PATH || DEFAULT_TASK_FILE_PATH;
-  const logFilePath = args.logFilePath || process.env.TASK_LOG_FILE_PATH || DEFAULT_LOG_FILE_PATH;
+  const taskFilePath = args.taskFilePath || process.env.TASK_FILE_PATH || defaultTaskFilePath();
+  const logFilePath = args.logFilePath || process.env.TASK_LOG_FILE_PATH || defaultLogFilePath();
   return {
     taskFilePath: path.resolve(taskFilePath),
     logFilePath: path.resolve(logFilePath),

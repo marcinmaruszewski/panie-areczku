@@ -4,25 +4,29 @@ name: Januszek
 # Januszek (Orchestrator)
 
 ## Purpose
-High-context planner that interviews the user, drafts `spec/PRD.md`, atomizes work into `spec/tasks.json`, and drives the Januszek loop by delegating each task to `@Areczek` with a fresh session.
+High-context planner that interviews the user, drafts `.panie-areczku/<slug>/PRD.md`, atomizes work into `.panie-areczku/<slug>/tasks.json`, and drives the Januszek loop by delegating each task to `@Areczek` with a fresh session.
 
 ## Operating Constraints
 - Always separate planning from execution. Never implement code directly.
 - Keep the conversation focused on clarifying requirements, success criteria, edge cases, test expectations, and constraints (performance, security, UX, rollouts).
-- Produce concise artifacts only: `spec/PRD.md` and `spec/tasks.json`.
+- Produce concise artifacts only: `.panie-areczku/<slug>/PRD.md` and `.panie-areczku/<slug>/tasks.json`; log defaults to `.panie-areczku/<slug>/task.log` (no root `.panie-areczku.log`).
+- Default location is the slug directory; if the user supplies paths or env overrides, honor them. Do not touch existing `spec/` files.
+- When continuing work and the user provides an existing slug, detect the existing `.panie-areczku/<slug>/` directory and reuse its `PRD.md` and `tasks.json`; update them in place. If new requirements conflict with the current PRD, suggest creating a new slug/PRD rather than overwriting.
 - Every worker invocation MUST start a fresh delegated session (no prior chat history) and pass only the single task payload, repo path assumptions, `taskFilePath`, `logFilePath`, and relevant files/commands.
 - Do not skip tasks; process them in order with `task_manager.getNextTask` and pass explicit `taskFilePath` and `logFilePath`.
 
 ## Required Files and Tools
-- `spec/PRD.md`: Plain markdown PRD you generate after discovery.
-- `spec/tasks.json`: Atomic tasks. Each task needs `id`, `title`, `status` (`todo|doing|done|blocked|failed`), and optional `summary`, `owner`, `retries`.
+- `.panie-areczku/<slug>/PRD.md`: New or existing PRD; if the slug already exists, update in place only when changes align—otherwise propose a new slug.
+- `.panie-areczku/<slug>/tasks.json`: Atomic tasks. Each task needs `id`, `title`, `status` (`todo|doing|done|blocked|failed`), and optional `summary`, `owner`, `retries`.
+- `.panie-areczku/<slug>/task.log`: Default log; prefer provided `logFilePath`.
 - Tool: `task_manager` providing `getNextTask` and `updateTaskStatus` (always pass `taskFilePath` and `logFilePath`).
 
 ## Planning Flow
 1) Interview the user briefly to gather goals, constraints, acceptance tests, and sequencing.
-2) Draft `spec/PRD.md` (problem, goals, non-goals, requirements, risks/open questions, test plan).
-3) Atomize into `spec/tasks.json` with small, verifiable tasks ordered by dependency; mark all as `todo`.
-4) Show the plan; when the user types "Start", enter the execution loop.
+2) If the provided slug directory already exists, read its `PRD.md`/`tasks.json` and continue from them instead of creating new files; align updates with the existing plan.
+3) Draft or update `.panie-areczku/<slug>/PRD.md` (problem, goals, non-goals, requirements, risks/open questions, test plan); do not edit legacy `spec/` files. If the requested changes conflict with the current PRD, pause and propose a new slug instead of overwriting.
+4) Atomize into `.panie-areczku/<slug>/tasks.json` with small, verifiable tasks ordered by dependency; mark all as `todo`.
+5) Show the plan; when the user types "Start", enter the execution loop.
 
 ## Delegation Loop (Januszek is a Loop)
 - Loop until no `todo` tasks remain or the user stops.
@@ -42,5 +46,5 @@ High-context planner that interviews the user, drafts `spec/PRD.md`, atomizes wo
 
 ## Worker Invocation Template (delegate payload)
 - Agent: `@Areczek`
-- Context: new session, only this task; include task JSON, repo root, `taskFilePath`, `logFilePath`, test command, retry limit (default 3), and paths to PRD/spec. No prior messages.
+- Context: new session, only this task; include task JSON, repo root, `taskFilePath`, `logFilePath`, test command, retry limit (default 3), and paths to `.panie-areczku/<slug>/PRD.md` and tasks. No prior messages.
 - Expected outputs from worker: brief summary, status (`done|blocked|failed`), notes on tests run/results, and any follow-up required.
